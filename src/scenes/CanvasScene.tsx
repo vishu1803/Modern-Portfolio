@@ -1,20 +1,5 @@
 "use client";
 
-/**
- * CanvasScene — Root 3D canvas component.
- *
- * Contains a SceneOrchestrator that maps the master scroll progress
- * (0→1) into phase-specific progress values for each sub-scene.
- *
- * Phase mapping (matches page.tsx master timeline):
- *   0.00–0.25  Resume Cloud visible
- *   0.25–0.45  AI Scan beam sweeps
- *   0.45–0.60  Selected resume comes to front
- *   0.60–0.75  Portfolio reveal (scene calms)
- *   0.75–0.90  Skills nodes
- *   0.90–1.00  Projects + Contact (scene very calm)
- */
-
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Suspense, useRef } from "react";
 import * as THREE from "three";
@@ -24,6 +9,15 @@ import SkillsScene from "./SkillsScene";
 
 interface CanvasSceneProps {
   masterProgressRef?: React.MutableRefObject<{ value: number }>;
+}
+
+function clamp01(v: number): number {
+  return Math.min(Math.max(v, 0), 1);
+}
+
+function smoothStep(v: number): number {
+  const t = clamp01(v);
+  return t * t * (3 - 2 * t);
 }
 
 function SceneOrchestrator({
@@ -37,37 +31,41 @@ function SceneOrchestrator({
   useFrame((state, delta) => {
     const p = masterProgressRef.current.value;
 
-    // Update child scene progress values
-    // Scan exclusively runs: 15% - 35%
-    scanProgressRef.current.value = clamp01((p - 0.15) / 0.20);
-    // Decision pause: 35% - 50%
-    // Zoom/Portfolio runs: 50% - 65%
-    portfolioProgressRef.current.value = clamp01((p - 0.50) / 0.15);
+    scanProgressRef.current.value = clamp01((p - 0.15) / 0.2);
+    portfolioProgressRef.current.value = clamp01((p - 0.5) / 0.15);
 
-    // Cinematic Camera Motion Map:
-    // Starts at Z=15. Slowly pushes in to tracking depths.
     let targetZ = 15;
     let targetY = 0;
     let targetX = 0;
 
     if (p < 0.25) {
-      // Intro zoom
-      targetZ = 15 - p * 8; // pushes in
-      targetY = p * -2;     // drift slightly down
-    } else if (p < 0.60) {
-      // AI Scan to Match Found
-      targetZ = 13 - (p - 0.25) * 5; 
-      targetY = -0.5 + (p - 0.25) * -1;
+      targetZ = 15 - p * 8;
+      targetY = p * -2;
+    } else if (p < 0.5) {
+      const scanBlend = smoothStep((p - 0.25) / 0.25);
+      targetZ = THREE.MathUtils.lerp(13, 10.7, scanBlend);
+      targetY = THREE.MathUtils.lerp(-0.55, -1.0, scanBlend);
+      targetX = THREE.MathUtils.lerp(0, 0.08, scanBlend);
+    } else if (p < 0.58) {
+      const zoomBlend = smoothStep((p - 0.5) / 0.08);
+      targetZ = THREE.MathUtils.lerp(10.7, 7.3, zoomBlend);
+      targetY = THREE.MathUtils.lerp(-1.0, -0.56, zoomBlend);
+      targetX = THREE.MathUtils.lerp(0.08, 0.2, zoomBlend);
+    } else if (p < 0.61) {
+      targetZ = 7.3;
+      targetY = -0.56;
+      targetX = 0.2;
     } else {
-      // Portfolio, Skills, Projects pushes in to close depth
-      targetZ = 11.25 - (p - 0.60) * 8; // pushes closer
-      targetY = -0.85 + (p - 0.60) * -2;
+      const settleBlend = smoothStep((p - 0.61) / 0.04);
+      targetZ = THREE.MathUtils.lerp(7.3, 6.95, settleBlend);
+      targetY = THREE.MathUtils.lerp(-0.56, -0.44, settleBlend);
+      targetX = THREE.MathUtils.lerp(0.2, 0.28, settleBlend);
     }
 
-    // Heavy cinematic damping for weighted push-in feeling (lowered from 3 to 1.2)
-    state.camera.position.z = THREE.MathUtils.damp(state.camera.position.z, targetZ, 1.2, delta);
-    state.camera.position.y = THREE.MathUtils.damp(state.camera.position.y, targetY, 1.2, delta);
-    state.camera.position.x = THREE.MathUtils.damp(state.camera.position.x, targetX, 1.2, delta);
+    state.camera.position.z = THREE.MathUtils.damp(state.camera.position.z, targetZ, 1.85, delta);
+    state.camera.position.y = THREE.MathUtils.damp(state.camera.position.y, targetY, 1.75, delta);
+    state.camera.position.x = THREE.MathUtils.damp(state.camera.position.x, targetX, 1.75, delta);
+    state.camera.lookAt(0, -0.02, 0.15);
   });
 
   return (
@@ -78,21 +76,15 @@ function SceneOrchestrator({
       />
       <SkillsScene masterProgressRef={masterProgressRef} />
 
-      {/* Subtle depth of field for optical richness */}
       <EffectComposer>
         <DepthOfField
-          focusDistance={0.025}
-          focalLength={0.15}
-          bokehScale={3.0}
+          focusDistance={0.021}
+          focalLength={0.16}
+          bokehScale={3.4}
         />
       </EffectComposer>
     </>
   );
-}
-
-/** Clamp a value between 0 and 1 */
-function clamp01(v: number): number {
-  return Math.min(Math.max(v, 0), 1);
 }
 
 export default function CanvasScene({ masterProgressRef }: CanvasSceneProps) {

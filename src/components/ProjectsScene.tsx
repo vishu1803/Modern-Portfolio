@@ -44,14 +44,14 @@ export default function ProjectsScene() {
           {PROJECTS.map((project) => (
             <div
               key={project.title}
-              className="project-card group relative rounded-[1.5rem] border border-white/10 bg-white/[0.03] backdrop-blur-md p-8 flex flex-col justify-between transition-all duration-500 ease-out hover:border-white/25 hover:bg-white/[0.06] hover:shadow-[0_0_40px_rgba(0,170,255,0.08)] hover:-translate-y-2"
+              className="project-card group relative rounded-[1.5rem] border border-white/10 bg-white/[0.03] backdrop-blur-md p-8 flex flex-col justify-between transition-all duration-500 ease-out hover:border-white/25 hover:bg-white/[0.06] hover:shadow-[0_0_40px_rgba(102,245,255,0.08)] hover:-translate-y-2"
               style={{ perspective: "800px" }}
             >
               {/* Subtle corner glow */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl -z-10 transform translate-x-1/3 -translate-y-1/3 group-hover:bg-cyan-500/10 transition-colors duration-500" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/5 rounded-full blur-2xl -z-10 transform translate-x-1/3 -translate-y-1/3 group-hover:bg-cyan-400/10 transition-colors duration-500" />
 
               <div>
-                <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-cyan-300 transition-colors duration-300">
+                <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-cyan-200 transition-colors duration-300">
                   {project.title}
                 </h3>
                 <p className="text-gray-400 text-base leading-relaxed mb-6">

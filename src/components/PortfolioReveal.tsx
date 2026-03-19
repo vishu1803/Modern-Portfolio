@@ -13,14 +13,14 @@ export default function PortfolioReveal() {
       <div className="reveal-content backdrop-blur-md bg-white/5 border border-white/10 p-12 md:p-16 rounded-[2rem] shadow-2xl relative overflow-hidden">
 
         {/* Subtle gradient glow behind the card */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -z-10 transform translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-400/10 rounded-full blur-3xl -z-10 transform translate-x-1/2 -translate-y-1/2" />
 
-        <p className="text-cyan-400 font-mono text-sm md:text-base tracking-widest uppercase mb-6">
-          // Profile Loaded
+        <p className="text-cyan-300 font-mono text-sm md:text-base tracking-widest uppercase mb-6">
+          Profile Loaded
         </p>
 
         <h2 className="text-4xl md:text-7xl font-bold mb-6 text-white tracking-tight">
-          Hi, I&apos;m <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Alex</span>.
+          Hi, I&apos;m <span className="text-cyan-300">Alex</span>.
         </h2>
 
         <p className="text-xl md:text-3xl text-gray-300 font-light leading-relaxed mb-12 max-w-2xl">

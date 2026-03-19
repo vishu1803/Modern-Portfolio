@@ -32,6 +32,7 @@ const CanvasScene = dynamic(() => import("@/scenes/CanvasScene"), { ssr: false }
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const masterProgressRef = useRef({ value: 0 });
+  const zoomStateRef = useRef({ complete: false });
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -65,21 +66,31 @@ export default function Home() {
       
       // --- PAUSE: 35% to 38% (Total silence, only the glowing 3D target is visible) ---
 
-      // ─── 38–47%: Selected Scene ─────────────────────────
+      // ─── 38–50%: Selected Scene ─────────────────────────
       tl.fromTo(".match-overlay",
         { opacity: 0, scale: 1.1, filter: "blur(20px)" },
         { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.03, ease: "power2.out" }, 0.38
       );
-      tl.to(".match-overlay", { opacity: 0, scale: 0.95, filter: "blur(10px)", duration: 0.03, ease: "power2.in" }, 0.47);
+      tl.to(".match-overlay", { opacity: 0, scale: 0.95, filter: "blur(10px)", duration: 0.03, ease: "power2.in" }, 0.50);
 
-      // --- PAUSE: 47% to 53% (Silence, 3D Camera physically zooms into the target violently) ---
+      tl.addLabel("zoomStart", 0.50);
+      tl.call(() => {
+        zoomStateRef.current.complete = false;
+      }, [], "zoomStart");
 
-      // ─── 53–65%: Portfolio Reveal ───────────────────────
+      tl.addLabel("zoomComplete", 0.58);
+      tl.call(() => {
+        zoomStateRef.current.complete = true;
+      }, [], "zoomComplete");
+
+      // --- PAUSE: 58% to 60% (Hold after zoomComplete, then reveal the portfolio UI) ---
+
+      // ─── 60–69%: Portfolio Reveal ───────────────────────
       tl.fromTo(".portfolio-overlay",
         { opacity: 0, y: 60, filter: "blur(20px)", scale: 0.95 },
-        { opacity: 1, y: 0, filter: "blur(0px)", scale: 1, duration: 0.03, ease: "power2.out" }, 0.53
+        { opacity: 1, y: 0, filter: "blur(0px)", scale: 1, duration: 0.03, ease: "power2.out" }, "zoomComplete+=0.02"
       );
-      tl.to(".portfolio-overlay", { opacity: 0, y: -40, filter: "blur(15px)", scale: 1.05, duration: 0.03, ease: "power2.in" }, 0.62);
+      tl.to(".portfolio-overlay", { opacity: 0, y: -40, filter: "blur(15px)", scale: 1.05, duration: 0.03, ease: "power2.in" }, 0.69);
 
       // ─── 65–80%: Skills Visible ─────────────────────────
       tl.fromTo(".skills-overlay",
@@ -134,7 +145,7 @@ export default function Home() {
         {/* Phase 5: Skills (3D renders in canvas — this is overlay-only) */}
         <div className="skills-overlay absolute inset-0 flex flex-col items-center justify-end pb-32 opacity-0 pointer-events-none">
           <p className="font-mono text-sm text-gray-500 tracking-[0.3em] uppercase mb-2">
-            // Architecture
+            Architecture
           </p>
           <h2 className="text-2xl text-white font-light tracking-wide">
             Core Competencies.
