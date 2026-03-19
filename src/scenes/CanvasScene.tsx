@@ -41,31 +41,27 @@ function SceneOrchestrator({
     if (p < 0.25) {
       targetZ = 15 - p * 8;
       targetY = p * -2;
-    } else if (p < 0.5) {
-      const scanBlend = smoothStep((p - 0.25) / 0.25);
+    } else if (p < 0.47) {
+      const scanBlend = smoothStep((p - 0.25) / 0.22);
       targetZ = THREE.MathUtils.lerp(13, 10.7, scanBlend);
-      targetY = THREE.MathUtils.lerp(-0.55, -1.0, scanBlend);
+      targetY = THREE.MathUtils.lerp(-0.55, -1.05, scanBlend);
       targetX = THREE.MathUtils.lerp(0, 0.08, scanBlend);
     } else if (p < 0.58) {
-      const zoomBlend = smoothStep((p - 0.5) / 0.08);
-      targetZ = THREE.MathUtils.lerp(10.7, 7.3, zoomBlend);
-      targetY = THREE.MathUtils.lerp(-1.0, -0.56, zoomBlend);
-      targetX = THREE.MathUtils.lerp(0.08, 0.2, zoomBlend);
-    } else if (p < 0.61) {
-      targetZ = 7.3;
-      targetY = -0.56;
-      targetX = 0.2;
+      const decisionBlend = smoothStep((p - 0.47) / 0.11);
+      targetZ = THREE.MathUtils.lerp(10.7, 10.15, decisionBlend);
+      targetY = THREE.MathUtils.lerp(-1.05, -0.88, decisionBlend);
+      targetX = THREE.MathUtils.lerp(0.08, 0.12, decisionBlend);
     } else {
-      const settleBlend = smoothStep((p - 0.61) / 0.04);
-      targetZ = THREE.MathUtils.lerp(7.3, 6.95, settleBlend);
-      targetY = THREE.MathUtils.lerp(-0.56, -0.44, settleBlend);
-      targetX = THREE.MathUtils.lerp(0.2, 0.28, settleBlend);
+      const zoomBlend = smoothStep((p - 0.58) / 0.07);
+      targetZ = THREE.MathUtils.lerp(10.15, 5.15, zoomBlend);
+      targetY = THREE.MathUtils.lerp(-0.88, -0.24, zoomBlend);
+      targetX = THREE.MathUtils.lerp(0.12, 0.34, zoomBlend);
     }
 
-    state.camera.position.z = THREE.MathUtils.damp(state.camera.position.z, targetZ, 1.85, delta);
-    state.camera.position.y = THREE.MathUtils.damp(state.camera.position.y, targetY, 1.75, delta);
-    state.camera.position.x = THREE.MathUtils.damp(state.camera.position.x, targetX, 1.75, delta);
-    state.camera.lookAt(0, -0.02, 0.15);
+    state.camera.position.z = THREE.MathUtils.damp(state.camera.position.z, targetZ, 2.3, delta);
+    state.camera.position.y = THREE.MathUtils.damp(state.camera.position.y, targetY, 2.05, delta);
+    state.camera.position.x = THREE.MathUtils.damp(state.camera.position.x, targetX, 2.05, delta);
+    state.camera.lookAt(0, -0.05, 0.1);
   });
 
   return (
