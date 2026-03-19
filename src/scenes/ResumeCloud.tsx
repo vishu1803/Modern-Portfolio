@@ -254,6 +254,7 @@ export default function ResumeCloud({ scanProgressRef, portfolioProgressRef }: R
       meshRef.current.getColorAt(i, currentColor);
       nextColor.copy(baseColors[i]);
 
+      let scaleFactor = 1;
       if (data.isTarget) {
         if (sinceTrigger >= TARGET_HOLD_DELAY) {
           nextColor.copy(scanGlowColor).lerp(targetGlowColor, targetResolve);
