@@ -49,7 +49,7 @@ function getSkillsPhase(p: number) {
 }
 
 // Minimal component to track Html positions in useFrame without needing standard Meshes!
-function HtmlTracker({ name, index, basePosition, timeOffset, masterProgressRef }: { name: string, index: number, basePosition: [number, number, number], timeOffset: number, masterProgressRef: React.MutableRefObject<{ value: number }> }) {
+function HtmlTracker({ name, basePosition, timeOffset, masterProgressRef }: { name: string, basePosition: [number, number, number], timeOffset: number, masterProgressRef: React.MutableRefObject<{ value: number }> }) {
   const groupRef = useRef<THREE.Group>(null);
   const divRef = useRef<HTMLDivElement>(null);
   
@@ -82,7 +82,7 @@ function HtmlTracker({ name, index, basePosition, timeOffset, masterProgressRef 
     <group ref={groupRef} position={basePosition}>
       <Html center distanceFactor={8} style={{ pointerEvents: "none", userSelect: "none" }}>
         <div ref={divRef} style={{ opacity: 0, visibility: "hidden", transition: "none", transform: "scale(0.8)", willChange: "opacity, transform" }}>
-          <span className="text-white text-sm md:text-base font-mono font-bold whitespace-nowrap px-3 py-1.5 rounded-full bg-black/60 border border-white/20 backdrop-blur-sm shadow-[0_0_15px_rgba(0,170,255,0.3)]">
+          <span className="text-white text-sm md:text-base font-mono font-bold whitespace-nowrap px-3 py-1.5 rounded-full bg-black/60 border border-white/20 backdrop-blur-sm shadow-[0_0_15px_rgba(102,245,255,0.22)]">
             {name}
           </span>
         </div>
@@ -97,7 +97,7 @@ export default function SkillsScene({ masterProgressRef }: SkillsSceneProps) {
   const glowMeshRef = useRef<THREE.InstancedMesh>(null);
   const linesRef = useRef<THREE.LineSegments>(null);
 
-  const timeOffsets = useMemo(() => SKILLS.map(() => Math.random() * 100), []);
+  const timeOffsets = useMemo(() => SKILLS.map((_, index) => index * 17.25), []);
   
   // Pre-allocate dummies to avoid new Objects in useFrame
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -162,7 +162,7 @@ export default function SkillsScene({ masterProgressRef }: SkillsSceneProps) {
         glowMeshRef.current.setMatrixAt(i, dummy.matrix);
         
         const glowIntensity = (isActive ? 0.3 + Math.sin(localT * 3) * 0.1 : 0.05) * fade;
-        colorTarget.setRGB(0, 0.8 * glowIntensity, glowIntensity); // Base #00ccff scaled by intensity
+        colorTarget.setRGB(0.4 * glowIntensity, 0.95 * glowIntensity, glowIntensity);
         glowMeshRef.current.setColorAt(i, colorTarget);
       }
       
@@ -181,9 +181,9 @@ export default function SkillsScene({ masterProgressRef }: SkillsSceneProps) {
   return (
     <group ref={groupRef} visible={false}>
       <ambientLight intensity={0.3} />
-      <pointLight position={[0, 5, 5]} intensity={1} color="#00aaff" />
+      <pointLight position={[0, 5, 5]} intensity={1} color="#66f5ff" />
 
-      <instancedMesh ref={glowMeshRef} args={[undefined as any, undefined as any, SKILLS.length]}>
+      <instancedMesh ref={glowMeshRef} args={[undefined as never, undefined as never, SKILLS.length]}>
         <sphereGeometry args={[0.4, 16, 16]} />
         <meshBasicMaterial
           color="#ffffff"
@@ -193,11 +193,11 @@ export default function SkillsScene({ masterProgressRef }: SkillsSceneProps) {
         />
       </instancedMesh>
 
-      <instancedMesh ref={solidMeshRef} args={[undefined as any, undefined as any, SKILLS.length]}>
+      <instancedMesh ref={solidMeshRef} args={[undefined as never, undefined as never, SKILLS.length]}>
         <sphereGeometry args={[0.25, 32, 32]} />
         <meshStandardMaterial
           color="#ffffff"
-          emissive="#00aaff"
+          emissive="#66f5ff"
           emissiveIntensity={0.4}
           roughness={0.2}
           metalness={0.8}
@@ -210,7 +210,6 @@ export default function SkillsScene({ masterProgressRef }: SkillsSceneProps) {
         <HtmlTracker 
           key={skill.name} 
           name={skill.name} 
-          index={i} 
           basePosition={skill.position} 
           timeOffset={timeOffsets[i]} 
           masterProgressRef={masterProgressRef} 
@@ -219,7 +218,7 @@ export default function SkillsScene({ masterProgressRef }: SkillsSceneProps) {
 
       <lineSegments ref={linesRef} geometry={linesGeom}>
         <lineBasicMaterial
-          color="#00aaff"
+          color="#66f5ff"
           transparent
           opacity={0}
           blending={THREE.AdditiveBlending}
