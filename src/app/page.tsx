@@ -1,25 +1,33 @@
 "use client";
 
+/**
+ * page.tsx — Master page with a single pinned GSAP ScrollTrigger timeline.
+ *
+ * Phase Map:
+ *   0.00 – 0.25  Resume Cloud (hero text + floating resumes)
+ *   0.25 – 0.45  AI Scan (beam sweeps)
+ *   0.45 – 0.60  Selected Resume (match found)
+ *   0.60 – 0.75  Portfolio Reveal (identity card)
+ *   0.75 – 0.90  Skills + Projects
+ *   0.90 – 1.00  Contact
+ */
+
 import { useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import CanvasScene from "@/scenes/CanvasScene";
+import ResumeScene from "@/components/ResumeScene";
+import ScanScene from "@/components/ScanScene";
+import SelectedScene from "@/components/SelectedScene";
 import PortfolioReveal from "@/components/PortfolioReveal";
 import ProjectsScene from "@/components/ProjectsScene";
-import ExperienceContactScene from "@/components/ExperienceContactScene";
+import ContactScene from "@/components/ContactScene";
 
+// Register at module scope so it's available before any useEffect runs
 gsap.registerPlugin(ScrollTrigger);
 
-/*
-  Master Timeline Phase Map:
-  0.00 - 0.25  Resume Cloud (floating resumes visible)
-  0.25 - 0.45  AI Scan (beam sweeps through)
-  0.45 - 0.60  Selected Resume (one resume comes to front)
-  0.60 - 0.75  Portfolio Reveal (HTML identity card fades in)
-  0.75 - 0.88  Skills (3D skill nodes)
-  0.88 - 0.96  Projects (project cards)
-  0.96 - 1.00  Contact (experience + contact links)
-*/
+// Dynamic import avoids SSR for the Three.js canvas (prevents hydration mismatch)
+const CanvasScene = dynamic(() => import("@/scenes/CanvasScene"), { ssr: false });
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,72 +36,69 @@ export default function Home() {
   useEffect(() => {
     const ctx = gsap.context(() => {
 
-      // Master pinned timeline
-      const masterTl = gsap.timeline({
+      // ─── Master pinned timeline ─────────────────────────────
+      const tl = gsap.timeline({
         scrollTrigger: {
           trigger: ".story-pinned",
           start: "top top",
-          end: "+=600%", // 6 screen-heights worth of scroll
+          end: "+=800%",
           pin: true,
-          scrub: 1,
+          scrub: 2.5, // Cinematic heavy scrubbing
           anticipatePin: 1,
-        }
+        },
       });
 
-      // Drive the master progress value from 0 to 1 across the full timeline
-      masterTl.to(masterProgressRef.current, { value: 1, duration: 1, ease: "none" }, 0);
+      // Drive master progress 0 → 1
+      tl.to(masterProgressRef.current, { value: 1, duration: 1, ease: "none" }, 0);
 
-      // --- Phase 0.00 - 0.25: Resume Cloud ---
-      // Hero text is visible, then fades out
-      masterTl.to(".hero-content", { opacity: 0, y: -60, duration: 0.2, ease: "power2.in" }, 0.15);
+      // ─── 0–15%: Resume Scene ────────────────────────────
+      tl.to(".hero-content", {
+        opacity: 0, y: -40, filter: "blur(16px)", scale: 0.95, duration: 0.03, ease: "power2.inOut",
+      }, 0.12); // Fades out just before 15%
 
-      // --- Phase 0.25 - 0.45: AI Scan ---
-      // Scanning text appears
-      masterTl.fromTo(".scan-overlay",
-        { opacity: 0 },
-        { opacity: 1, duration: 0.05, ease: "none" },
-        0.25
+      // ─── 15–35%: Scan Scene ─────────────────────────────
+      tl.fromTo(".scan-overlay",
+        { opacity: 0, y: 20, filter: "blur(10px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.03, ease: "power2.out" }, 0.15
       );
-      masterTl.to(".scan-overlay", { opacity: 0, duration: 0.05, ease: "none" }, 0.42);
+      tl.to(".scan-overlay", { opacity: 0, y: -20, filter: "blur(10px)", duration: 0.03, ease: "power2.in" }, 0.32);
+      
+      // --- PAUSE: 35% to 38% (Total silence, only the glowing 3D target is visible) ---
 
-      // --- Phase 0.45 - 0.60: Selected Resume ---
-      // "Match found" text
-      masterTl.fromTo(".match-overlay",
-        { opacity: 0, scale: 0.9 },
-        { opacity: 1, scale: 1, duration: 0.08, ease: "power2.out" },
-        0.48
+      // ─── 38–47%: Selected Scene ─────────────────────────
+      tl.fromTo(".match-overlay",
+        { opacity: 0, scale: 1.1, filter: "blur(20px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.03, ease: "power2.out" }, 0.38
       );
-      masterTl.to(".match-overlay", { opacity: 0, duration: 0.05 }, 0.58);
+      tl.to(".match-overlay", { opacity: 0, scale: 0.95, filter: "blur(10px)", duration: 0.03, ease: "power2.in" }, 0.47);
 
-      // --- Phase 0.60 - 0.75: Portfolio Reveal ---
-      masterTl.fromTo(".portfolio-overlay",
-        { opacity: 0, y: 60 },
-        { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" },
-        0.60
+      // --- PAUSE: 47% to 53% (Silence, 3D Camera physically zooms into the target violently) ---
+
+      // ─── 53–65%: Portfolio Reveal ───────────────────────
+      tl.fromTo(".portfolio-overlay",
+        { opacity: 0, y: 60, filter: "blur(20px)", scale: 0.95 },
+        { opacity: 1, y: 0, filter: "blur(0px)", scale: 1, duration: 0.03, ease: "power2.out" }, 0.53
       );
-      masterTl.to(".portfolio-overlay", { opacity: 0, y: -40, duration: 0.05 }, 0.73);
+      tl.to(".portfolio-overlay", { opacity: 0, y: -40, filter: "blur(15px)", scale: 1.05, duration: 0.03, ease: "power2.in" }, 0.62);
 
-      // --- Phase 0.75 - 0.88: Skills ---
-      masterTl.fromTo(".skills-overlay",
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 0.08, ease: "power2.out" },
-        0.75
+      // ─── 65–80%: Skills Visible ─────────────────────────
+      tl.fromTo(".skills-overlay",
+        { opacity: 0, y: 40, filter: "blur(15px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.03, ease: "power2.out" }, 0.65
       );
-      masterTl.to(".skills-overlay", { opacity: 0, y: -30, duration: 0.05 }, 0.86);
+      tl.to(".skills-overlay", { opacity: 0, y: -40, filter: "blur(10px)", duration: 0.03, ease: "power2.in" }, 0.77);
 
-      // --- Phase 0.88 - 0.96: Projects ---
-      masterTl.fromTo(".projects-overlay",
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 0.06, ease: "power2.out" },
-        0.88
+      // ─── 80–92%: Projects Visible ───────────────────────
+      tl.fromTo(".projects-overlay",
+        { opacity: 0, y: 40, filter: "blur(15px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.03, ease: "power2.out" }, 0.80
       );
-      masterTl.to(".projects-overlay", { opacity: 0, y: -30, duration: 0.03 }, 0.94);
+      tl.to(".projects-overlay", { opacity: 0, y: -40, filter: "blur(10px)", duration: 0.03, ease: "power2.in" }, 0.89);
 
-      // --- Phase 0.96 - 1.00: Contact ---
-      masterTl.fromTo(".contact-overlay",
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.04, ease: "power2.out" },
-        0.96
+      // ─── 92–100%: Contact Visible ───────────────────────
+      tl.fromTo(".contact-overlay",
+        { opacity: 0, y: 40, filter: "blur(15px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.03, ease: "power2.out" }, 0.92
       );
 
     }, containerRef);
@@ -104,7 +109,7 @@ export default function Home() {
   return (
     <main ref={containerRef} className="relative w-full bg-transparent text-gray-100">
 
-      {/* Fixed 3D Canvas Layer */}
+      {/* Fixed 3D Canvas Layer (SSR-disabled) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <CanvasScene masterProgressRef={masterProgressRef} />
       </div>
@@ -112,48 +117,28 @@ export default function Home() {
       {/* Pinned Storytelling Container */}
       <div className="story-pinned relative z-10 w-full h-screen overflow-hidden">
 
-        {/* Phase 1: Resume Cloud — Hero Text */}
-        <div className="hero-content absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-8xl font-bold tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-br from-white via-gray-300 to-gray-700">
-              The Search Ends Here.
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-400 font-light tracking-wide leading-relaxed">
-              An AI scans through thousands of resumes.
-              <span className="block mt-4 text-white font-medium">One is selected. This is their story.</span>
-            </p>
-          </div>
-        </div>
+        {/* Phase 1: Hero Text */}
+        <ResumeScene />
 
-        {/* Phase 2: AI Scan Overlay */}
-        <div className="scan-overlay absolute inset-0 flex items-end justify-center pb-32 opacity-0 pointer-events-none">
-          <div className="text-center">
-            <p className="font-mono text-sm text-cyan-400 tracking-widest uppercase animate-pulse">
-              Scanning candidate database...
-            </p>
-            <div className="mt-4 w-64 h-0.5 bg-gray-800 rounded-full overflow-hidden mx-auto">
-              <div className="w-full h-full bg-cyan-400/60 origin-left animate-[pulse_2s_infinite]" />
-            </div>
-          </div>
-        </div>
+        {/* Phase 2: AI Scan */}
+        <ScanScene />
 
         {/* Phase 3: Match Found */}
-        <div className="match-overlay absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none">
-          <div className="text-center">
-            <p className="font-mono text-cyan-400 text-sm tracking-widest uppercase mb-4">// Match Found</p>
-            <h2 className="text-5xl md:text-7xl font-bold text-white tracking-tight">99.9%</h2>
-            <p className="text-gray-400 mt-4 text-lg font-light">Candidate identified.</p>
-          </div>
-        </div>
+        <SelectedScene />
 
         {/* Phase 4: Portfolio Reveal */}
-        <div className="portfolio-overlay absolute inset-0 flex items-center justify-center px-6 opacity-0">
+        <div className="portfolio-overlay absolute inset-0 flex items-center justify-center px-6 opacity-0 pointer-events-none">
           <PortfolioReveal />
         </div>
 
-        {/* Phase 5: Skills */}
-        <div className="skills-overlay absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none">
-          {/* 3D SkillsScene renders in the canvas — this is just a label */}
+        {/* Phase 5: Skills (3D renders in canvas — this is overlay-only) */}
+        <div className="skills-overlay absolute inset-0 flex flex-col items-center justify-end pb-32 opacity-0 pointer-events-none">
+          <p className="font-mono text-sm text-gray-500 tracking-[0.3em] uppercase mb-2">
+            // Architecture
+          </p>
+          <h2 className="text-2xl text-white font-light tracking-wide">
+            Core Competencies.
+          </h2>
         </div>
 
         {/* Phase 6: Projects */}
@@ -163,7 +148,7 @@ export default function Home() {
 
         {/* Phase 7: Contact */}
         <div className="contact-overlay absolute inset-0 flex items-center justify-center px-6 opacity-0">
-          <ExperienceContactScene />
+          <ContactScene />
         </div>
 
       </div>

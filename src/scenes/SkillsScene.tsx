@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * SkillsScene — 3D network of skill nodes with connecting lines.
+ *
+ * Performance Optimized:
+ * - Uses InstancedMesh for the 5 solid nodes -> 1 draw call
+ * - Uses InstancedMesh for the 5 glow halos -> 1 draw call
+ * - Maps 7 connecting lines into a single LineSegments geometry -> 1 draw call
+ * - HTML labels use lightweight Groups for tracking rather than full Meshes.
+ */
+
 import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
@@ -13,81 +23,177 @@ const SKILLS = [
   { name: "Git", position: [3, -1.5, -1] as [number, number, number] },
 ];
 
-// Define which nodes connect to which
 const CONNECTIONS: [number, number][] = [
-  [0, 1], // Python - DSA
-  [0, 2], // Python - Backend
-  [0, 3], // Python - APIs
-  [1, 2], // DSA - Backend
-  [2, 3], // Backend - APIs
-  [2, 4], // Backend - Git
-  [3, 4], // APIs - Git
+  [0, 1], [0, 2], [0, 3],
+  [1, 2], [2, 3], [2, 4], [3, 4],
 ];
 
 interface SkillsSceneProps {
-  progressRef: React.MutableRefObject<{ value: number }>;
+  masterProgressRef: React.MutableRefObject<{ value: number }>;
 }
 
-// Individual Skill Node
-function SkillNode({
-  name,
-  position,
-  index,
-  progressRef,
-}: {
-  name: string;
-  position: [number, number, number];
-  index: number;
-  progressRef: React.MutableRefObject<{ value: number }>;
-}) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const glowRef = useRef<THREE.Mesh>(null);
-  const timeOffset = useRef(Math.random() * 100);
+// Calculate the unified fade and scale state for the skills scene based on the master scroll progress (0 to 1).
+function getSkillsPhase(p: number) {
+  // 0–65% -> no skills
+  // 65-80% -> show skills (fade in: 0.65-0.68, solid: 0.68-0.77, fade out: 0.77-0.80)
+  // 80-100% -> hide skills
+  let fade = 0;
+  if (p < 0.65) fade = 0;
+  else if (p < 0.68) fade = (p - 0.65) / 0.03;
+  else if (p < 0.77) fade = 1;
+  else if (p < 0.80) fade = 1 - (p - 0.77) / 0.03;
+  else fade = 0;
+  
+  // Smooth easing
+  return Math.min(Math.max(fade * fade * (3 - 2 * fade), 0), 1);
+}
+
+// Minimal component to track Html positions in useFrame without needing standard Meshes!
+function HtmlTracker({ name, index, basePosition, timeOffset, masterProgressRef }: { name: string, index: number, basePosition: [number, number, number], timeOffset: number, masterProgressRef: React.MutableRefObject<{ value: number }> }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const divRef = useRef<HTMLDivElement>(null);
+  
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const p = masterProgressRef.current.value;
+    const fade = getSkillsPhase(p);
+    
+    if (fade <= 0.01) {
+      if (divRef.current && divRef.current.style.visibility !== "hidden") {
+        divRef.current.style.visibility = "hidden";
+        divRef.current.style.opacity = "0";
+      }
+      return;
+    }
+    
+    if (divRef.current) {
+      divRef.current.style.visibility = "visible";
+      divRef.current.style.opacity = fade.toString();
+      divRef.current.style.transform = `scale(${0.8 + fade * 0.2})`;
+    }
+
+    const t = state.clock.elapsedTime + timeOffset;
+    groupRef.current.position.x = basePosition[0] + Math.cos(t * 0.15) * 0.04;
+    groupRef.current.position.y = basePosition[1] + Math.sin(t * 0.2) * 0.06;
+    groupRef.current.position.z = basePosition[2];
+  });
+
+  return (
+    <group ref={groupRef} position={basePosition}>
+      <Html center distanceFactor={8} style={{ pointerEvents: "none", userSelect: "none" }}>
+        <div ref={divRef} style={{ opacity: 0, visibility: "hidden", transition: "none", transform: "scale(0.8)", willChange: "opacity, transform" }}>
+          <span className="text-white text-sm md:text-base font-mono font-bold whitespace-nowrap px-3 py-1.5 rounded-full bg-black/60 border border-white/20 backdrop-blur-sm shadow-[0_0_15px_rgba(0,170,255,0.3)]">
+            {name}
+          </span>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+export default function SkillsScene({ masterProgressRef }: SkillsSceneProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const solidMeshRef = useRef<THREE.InstancedMesh>(null);
+  const glowMeshRef = useRef<THREE.InstancedMesh>(null);
+  const linesRef = useRef<THREE.LineSegments>(null);
+
+  const timeOffsets = useMemo(() => SKILLS.map(() => Math.random() * 100), []);
+  
+  // Pre-allocate dummies to avoid new Objects in useFrame
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const colorTarget = useMemo(() => new THREE.Color(), []);
+
+  // Pre-calculate line segments
+  const linesGeom = useMemo(() => {
+    const pts: THREE.Vector3[] = [];
+    CONNECTIONS.forEach(([a, b]) => {
+      pts.push(new THREE.Vector3(...SKILLS[a].position));
+      pts.push(new THREE.Vector3(...SKILLS[b].position));
+    });
+    return new THREE.BufferGeometry().setFromPoints(pts);
+  }, []);
 
   useFrame((state) => {
-    if (!meshRef.current) return;
-    const t = state.clock.elapsedTime + timeOffset.current;
-    const progress = progressRef.current.value;
+    if (!groupRef.current) return;
+    
+    const p = masterProgressRef.current.value;
+    const fade = getSkillsPhase(p);
+    
+    const isVisible = fade > 0.01;
+    groupRef.current.visible = isVisible;
+    if (!isVisible) return; // Save math if hidden
 
-    // Gentle floating
-    meshRef.current.position.y = position[1] + Math.sin(t * 0.5) * 0.15;
-    meshRef.current.position.x = position[0] + Math.cos(t * 0.3) * 0.1;
+    const t = state.clock.elapsedTime;
+    
+    // Process instances
+    if (solidMeshRef.current && glowMeshRef.current) {
+      // Set global opacity for the solid mesh material
+      (solidMeshRef.current.material as THREE.MeshStandardMaterial).opacity = fade;
 
-    // Each node activates sequentially based on scroll progress
-    // Node 0 activates at progress 0.0-0.2, node 1 at 0.2-0.4, etc.
-    const activationStart = index / SKILLS.length;
-    const activationEnd = (index + 1) / SKILLS.length;
-    const isActive = progress >= activationStart && progress <= activationEnd + 0.3;
+      for (let i = 0; i < SKILLS.length; i++) {
+        const skill = SKILLS[i];
+        const offset = timeOffsets[i];
+        const localT = t + offset;
+        
+        // Minimalist base positions with extremely subtle drift
+        const x = skill.position[0] + Math.cos(localT * 0.15) * 0.04;
+        const y = skill.position[1] + Math.sin(localT * 0.2) * 0.06;
+        const z = skill.position[2];
+        
+        // Sequential node pulsing
+        const nodePhase = Math.max(0, fade * 1.5 - i * 0.1); 
+        const isActive = nodePhase > 0.5 && nodePhase < 1.2;
+        
+        const pulseScale = isActive ? 1 + Math.sin(localT * 3) * 0.1 : 1;
+        
+        // Smooth scale up when entering
+        const instanceScale = (0.5 + fade * 0.5) * pulseScale;
+        
+        dummy.position.set(x, y, z);
+        
+        // Solid mesh transform
+        dummy.scale.setScalar(instanceScale);
+        dummy.updateMatrix();
+        solidMeshRef.current.setMatrixAt(i, dummy.matrix);
+        
+        // Glow mesh transform & "opacity" via additive color hack (multiplied by master fade)
+        dummy.scale.setScalar((isActive ? pulseScale * 2.5 : 1.5) * fade);
+        dummy.updateMatrix();
+        glowMeshRef.current.setMatrixAt(i, dummy.matrix);
+        
+        const glowIntensity = (isActive ? 0.3 + Math.sin(localT * 3) * 0.1 : 0.05) * fade;
+        colorTarget.setRGB(0, 0.8 * glowIntensity, glowIntensity); // Base #00ccff scaled by intensity
+        glowMeshRef.current.setColorAt(i, colorTarget);
+      }
+      
+      solidMeshRef.current.instanceMatrix.needsUpdate = true;
+      glowMeshRef.current.instanceMatrix.needsUpdate = true;
+      if (glowMeshRef.current.instanceColor) glowMeshRef.current.instanceColor.needsUpdate = true;
+    }
 
-    // Pulse scale when active
-    const baseScale = 1;
-    const pulseScale = isActive ? baseScale + Math.sin(t * 3) * 0.1 : baseScale;
-    meshRef.current.scale.setScalar(pulseScale);
-
-    // Glow effect
-    if (glowRef.current) {
-      glowRef.current.position.copy(meshRef.current.position);
-      glowRef.current.scale.setScalar(isActive ? pulseScale * 2.5 : 1.5);
-      (glowRef.current.material as THREE.MeshBasicMaterial).opacity = isActive ? 0.3 + Math.sin(t * 3) * 0.1 : 0.05;
+    // Process uniforms
+    if (linesRef.current) {
+      const mat = linesRef.current.material as THREE.LineBasicMaterial;
+      mat.opacity = fade * (0.15 + Math.sin(t * 0.5) * 0.05); // Pulsing uniform opacity multiplied by master fade
     }
   });
 
   return (
-    <group>
-      {/* Glow sphere behind the node */}
-      <mesh ref={glowRef} position={position}>
+    <group ref={groupRef} visible={false}>
+      <ambientLight intensity={0.3} />
+      <pointLight position={[0, 5, 5]} intensity={1} color="#00aaff" />
+
+      <instancedMesh ref={glowMeshRef} args={[undefined as any, undefined as any, SKILLS.length]}>
         <sphereGeometry args={[0.4, 16, 16]} />
         <meshBasicMaterial
-          color="#00ccff"
+          color="#ffffff"
           transparent
-          opacity={0.05}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
-      </mesh>
+      </instancedMesh>
 
-      {/* Main node sphere */}
-      <mesh ref={meshRef} position={position}>
+      <instancedMesh ref={solidMeshRef} args={[undefined as any, undefined as any, SKILLS.length]}>
         <sphereGeometry args={[0.25, 32, 32]} />
         <meshStandardMaterial
           color="#ffffff"
@@ -95,86 +201,31 @@ function SkillNode({
           emissiveIntensity={0.4}
           roughness={0.2}
           metalness={0.8}
+          transparent
         />
+      </instancedMesh>
 
-        {/* HTML label for accessibility */}
-        <Html
-          center
-          distanceFactor={8}
-          style={{
-            pointerEvents: "none",
-            userSelect: "none",
-          }}
-        >
-          <span className="text-white text-sm md:text-base font-mono font-bold whitespace-nowrap px-3 py-1.5 rounded-full bg-black/60 border border-white/20 backdrop-blur-sm">
-            {name}
-          </span>
-        </Html>
-      </mesh>
-    </group>
-  );
-}
-
-// Connection Lines between nodes
-function ConnectionLines({ progressRef }: { progressRef: React.MutableRefObject<{ value: number }> }) {
-  const linesRef = useRef<THREE.Group>(null);
-
-  const lineObjects = useMemo(() => {
-    return CONNECTIONS.map(([a, b]) => {
-      const points = [
-        new THREE.Vector3(...SKILLS[a].position),
-        new THREE.Vector3(...SKILLS[b].position),
-      ];
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const material = new THREE.LineBasicMaterial({
-        color: "#00aaff",
-        transparent: true,
-        opacity: 0.1,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      });
-      return new THREE.Line(geometry, material);
-    });
-  }, []);
-
-  useFrame((state) => {
-    const t = state.clock.elapsedTime;
-    const progress = progressRef.current.value;
-
-    lineObjects.forEach((lineObj, i) => {
-      const mat = lineObj.material as THREE.LineBasicMaterial;
-      const lineProgress = Math.min(progress * 2, 1);
-      mat.opacity = lineProgress * (0.15 + Math.sin(t * 0.5 + i) * 0.05);
-    });
-  });
-
-  return (
-    <group ref={linesRef}>
-      {lineObjects.map((lineObj, i) => (
-        <primitive key={i} object={lineObj} />
-      ))}
-    </group>
-  );
-}
-
-// Main SkillsScene
-export default function SkillsScene({ progressRef }: SkillsSceneProps) {
-  return (
-    <group>
-      <ambientLight intensity={0.3} />
-      <pointLight position={[0, 5, 5]} intensity={1} color="#00aaff" />
-
+      {/* HTML OVERLAYS */}
       {SKILLS.map((skill, i) => (
-        <SkillNode
-          key={skill.name}
-          name={skill.name}
-          position={skill.position}
-          index={i}
-          progressRef={progressRef}
+        <HtmlTracker 
+          key={skill.name} 
+          name={skill.name} 
+          index={i} 
+          basePosition={skill.position} 
+          timeOffset={timeOffsets[i]} 
+          masterProgressRef={masterProgressRef} 
         />
       ))}
 
-      <ConnectionLines progressRef={progressRef} />
+      <lineSegments ref={linesRef} geometry={linesGeom}>
+        <lineBasicMaterial
+          color="#00aaff"
+          transparent
+          opacity={0}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </lineSegments>
     </group>
   );
 }

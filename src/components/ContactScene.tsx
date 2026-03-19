@@ -1,13 +1,10 @@
 "use client";
 
 /**
- * ExperienceContactScene — Final section showing experience summary,
+ * ContactScene — Final section showing experience summary,
  * current learning focus, contact links, and a closing statement.
- *
- * Visibility is controlled entirely by the master GSAP timeline
- * in page.tsx; this component is purely presentational.
  */
-export default function ExperienceContactScene() {
+export default function ContactScene() {
   return (
     <div className="w-full flex flex-col items-center justify-center px-6 relative z-10">
       <div className="max-w-3xl w-full space-y-16">

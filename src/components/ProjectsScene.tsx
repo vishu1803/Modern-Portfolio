@@ -1,26 +1,35 @@
 "use client";
 
-import { useRef, useLayoutEffect } from "react";
-import gsap from "gsap";
+/**
+ * ProjectsScene — 3 floating project cards with title, description,
+ * tech stack, and link buttons.
+ *
+ * Visibility is controlled entirely by the master GSAP timeline
+ * in page.tsx; this component is purely presentational with
+ * CSS-only hover interactions.
+ */
 
 const PROJECTS = [
   {
     title: "Project Alpha",
-    description: "A real-time collaborative platform with WebSocket-driven state sync and optimistic UI updates.",
+    description:
+      "A real-time collaborative platform with WebSocket-driven state sync and optimistic UI updates.",
     tech: ["Next.js", "TypeScript", "Redis", "WebSocket"],
     liveUrl: "#",
     sourceUrl: "#",
   },
   {
     title: "Project Beta",
-    description: "REST API gateway handling 10k+ requests/sec with rate limiting, caching, and JWT auth.",
+    description:
+      "REST API gateway handling 10k+ requests/sec with rate limiting, caching, and JWT auth.",
     tech: ["Python", "FastAPI", "PostgreSQL", "Docker"],
     liveUrl: "#",
     sourceUrl: "#",
   },
   {
     title: "Project Gamma",
-    description: "CLI tool for automated code review with custom linting rules and Git hook integration.",
+    description:
+      "CLI tool for automated code review with custom linting rules and Git hook integration.",
     tech: ["Go", "Git", "CI/CD", "Bash"],
     liveUrl: "#",
     sourceUrl: "#",
@@ -28,27 +37,8 @@ const PROJECTS = [
 ];
 
 export default function ProjectsScene() {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from(".project-card", {
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top center+=100",
-          end: "center center",
-          scrub: true,
-        },
-        y: 80,
-        opacity: 0,
-        stagger: 0.15,
-      });
-    }, containerRef);
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <div ref={containerRef} className="min-h-screen flex flex-col items-center justify-center px-6 py-32 relative z-10 w-full">
+    <div className="w-full flex flex-col items-center justify-center px-6 relative z-10">
       <div className="max-w-6xl w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {PROJECTS.map((project) => (
