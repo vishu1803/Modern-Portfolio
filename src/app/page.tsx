@@ -12,7 +12,7 @@
  *   0.90 – 1.00  Contact
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -32,7 +32,7 @@ const CanvasScene = dynamic(() => import("@/scenes/CanvasScene"), { ssr: false }
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const masterProgressRef = useRef({ value: 0 });
-  const zoomStateRef = useRef({ complete: false });
+  const [zoomState, setZoomState] = useState({ complete: false, exit: false });
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -73,24 +73,20 @@ export default function Home() {
       );
       tl.to(".match-overlay", { opacity: 0, scale: 0.95, filter: "blur(10px)", duration: 0.03, ease: "power2.in" }, 0.50);
 
-      tl.addLabel("zoomStart", 0.50);
-      tl.call(() => {
-        zoomStateRef.current.complete = false;
-      }, [], "zoomStart");
-
-      tl.addLabel("zoomComplete", 0.58);
-      tl.call(() => {
-        zoomStateRef.current.complete = true;
-      }, [], "zoomComplete");
-
       // --- PAUSE: 58% to 60% (Hold after zoomComplete, then reveal the portfolio UI) ---
 
-      // ─── 60–69%: Portfolio Reveal ───────────────────────
-      tl.fromTo(".portfolio-overlay",
-        { opacity: 0, y: 60, filter: "blur(20px)", scale: 0.95 },
-        { opacity: 1, y: 0, filter: "blur(0px)", scale: 1, duration: 0.03, ease: "power2.out" }, "zoomComplete+=0.02"
-      );
-      tl.to(".portfolio-overlay", { opacity: 0, y: -40, filter: "blur(15px)", scale: 1.05, duration: 0.03, ease: "power2.in" }, 0.69);
+      // Track Native Progress independently of scrub limits
+      tl.eventCallback("onUpdate", () => {
+        const p = masterProgressRef.current.value;
+        setZoomState(prev => {
+          const isComplete = p >= 0.58;
+          const isExit = p >= 0.69;
+          if (prev.complete !== isComplete || prev.exit !== isExit) {
+            return { complete: isComplete, exit: isExit };
+          }
+          return prev;
+        });
+      });
 
       // ─── 65–80%: Skills Visible ─────────────────────────
       tl.fromTo(".skills-overlay",
@@ -138,8 +134,8 @@ export default function Home() {
         <SelectedScene />
 
         {/* Phase 4: Portfolio Reveal */}
-        <div className="portfolio-overlay absolute inset-0 flex items-center justify-center px-6 opacity-0 pointer-events-none">
-          <PortfolioReveal />
+        <div className="absolute inset-0 flex items-center justify-center px-6 pointer-events-none">
+          <PortfolioReveal isVisible={zoomState.complete} isExit={zoomState.exit} />
         </div>
 
         {/* Phase 5: Skills (3D renders in canvas — this is overlay-only) */}

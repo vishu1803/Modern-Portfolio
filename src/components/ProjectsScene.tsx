@@ -51,7 +51,7 @@ export default function ProjectsScene() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/5 rounded-full blur-2xl -z-10 transform translate-x-1/3 -translate-y-1/3 group-hover:bg-cyan-400/10 transition-colors duration-500" />
 
               <div>
-                <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-cyan-200 transition-colors duration-300">
+                <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors duration-300">
                   {project.title}
                 </h3>
                 <p className="text-gray-400 text-base leading-relaxed mb-6">

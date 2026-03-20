@@ -48,10 +48,7 @@ export default function ResumeCloud({ scanProgressRef, portfolioProgressRef }: R
   const groupRef = useRef<THREE.Group>(null);
   const beamGroupRef = useRef<THREE.Group>(null);
   const beamCoreRef = useRef<THREE.Mesh>(null);
-  const beamHaloRef = useRef<THREE.Mesh>(null);
-  const beamSpillRef = useRef<THREE.Mesh>(null);
   const beamLightRef = useRef<THREE.PointLight>(null);
-  const beamLightWideRef = useRef<THREE.PointLight>(null);
   const scanPulseRef = useRef<THREE.Mesh>(null);
   const decisionGroupRef = useRef<THREE.Group>(null);
   const decisionLightRef = useRef<THREE.PointLight>(null);
@@ -107,17 +104,13 @@ export default function ResumeCloud({ scanProgressRef, portfolioProgressRef }: R
   }, []);
 
   const baseColors = useMemo(
-    () =>
-      Array.from({ length: CARD_COUNT }, (_, index) => {
-        const shade = 0.9 + (index % 4) * 0.016;
-        return new THREE.Color(shade, shade + 0.012, 0.97);
-      }),
+    () => Array.from({ length: CARD_COUNT }, () => new THREE.Color("#ffffff")),
     []
   );
-  const rejectedColor = useMemo(() => new THREE.Color("#04101f"), []);
-  const scanGlowColor = useMemo(() => new THREE.Color("#4feaff"), []);
-  const targetGlowColor = useMemo(() => new THREE.Color("#85ffd7"), []);
-  const decisionColor = useMemo(() => new THREE.Color("#dffcff"), []);
+  const rejectedColor = useMemo(() => new THREE.Color("#475569"), []);
+  const scanGlowColor = useMemo(() => new THREE.Color("#00e5ff"), []);
+  const targetGlowColor = useMemo(() => new THREE.Color("#aaffff"), []);
+  const decisionColor = useMemo(() => new THREE.Color("#ffffff"), []);
   const hiddenColor = useMemo(() => new THREE.Color("#000000"), []);
   const currentColor = useMemo(() => new THREE.Color(), []);
   const nextColor = useMemo(() => new THREE.Color(), []);
@@ -188,27 +181,19 @@ export default function ResumeCloud({ scanProgressRef, portfolioProgressRef }: R
 
     let strongestPulse = 0;
 
-    if (beamGroupRef.current && beamCoreRef.current && beamHaloRef.current && beamSpillRef.current) {
+    if (beamGroupRef.current && beamCoreRef.current) {
       const beamVisible = progress > 0.001 && progress < 0.995 && portfolioProgress < 0.24;
       beamGroupRef.current.visible = beamVisible;
       beamGroupRef.current.position.set(0, 0, beamZ);
 
       const coreMaterial = beamCoreRef.current.material as THREE.MeshBasicMaterial;
-      const haloMaterial = beamHaloRef.current.material as THREE.MeshBasicMaterial;
-      const spillMaterial = beamSpillRef.current.material as THREE.MeshBasicMaterial;
       const beamEnergy = (1 - decisionMoment * 0.7) * beamPulse;
 
       coreMaterial.opacity = 0.94 * beamEnergy;
-      haloMaterial.opacity = 0.34 * beamEnergy;
-      spillMaterial.opacity = 0.13 * beamEnergy;
       beamGroupRef.current.scale.set(1, 1 + (beamPulse - 0.9) * 0.16, 1);
 
       if (beamLightRef.current) {
         beamLightRef.current.intensity = beamVisible ? 10 * beamEnergy : 0;
-      }
-
-      if (beamLightWideRef.current) {
-        beamLightWideRef.current.intensity = beamVisible ? 4.8 * beamEnergy : 0;
       }
     }
 
@@ -254,7 +239,6 @@ export default function ResumeCloud({ scanProgressRef, portfolioProgressRef }: R
       meshRef.current.getColorAt(i, currentColor);
       nextColor.copy(baseColors[i]);
 
-      let scaleFactor = 1;
       if (data.isTarget) {
         if (sinceTrigger >= TARGET_HOLD_DELAY) {
           nextColor.copy(scanGlowColor).lerp(targetGlowColor, targetResolve);
@@ -330,7 +314,7 @@ export default function ResumeCloud({ scanProgressRef, portfolioProgressRef }: R
 
       <ambientLight intensity={0.34} color="#ffffff" />
       <directionalLight position={[10, 20, 15]} intensity={1.18} color="#dbe7ff" />
-      <spotLight position={[0, 0, 18]} intensity={3.9} angle={0.3} penumbra={1} color="#7edcff" distance={40} />
+      <spotLight position={[0, 0, 18]} intensity={3.9} angle={0.3} penumbra={1} color="#00e5ff" distance={40} />
       <pointLight position={[0, 0, 6]} intensity={0.55} color="#ffffff" distance={28} />
 
       <Environment preset="city" />
@@ -338,43 +322,17 @@ export default function ResumeCloud({ scanProgressRef, portfolioProgressRef }: R
       <group ref={groupRef}>
         <group ref={beamGroupRef} visible={false}>
           <mesh ref={beamCoreRef}>
-            <planeGeometry args={[4.2, 0.18]} />
+            <planeGeometry args={[28, 0.15]} />
             <meshBasicMaterial
-              color="#8dfeff"
+              color="#00e5ff"
               transparent
-              opacity={0.94}
+              opacity={0.9}
               blending={THREE.AdditiveBlending}
               depthWrite={false}
               side={THREE.DoubleSide}
             />
           </mesh>
-
-          <mesh ref={beamHaloRef}>
-            <planeGeometry args={[6.8, 1.05]} />
-            <meshBasicMaterial
-              color="#2ddbff"
-              transparent
-              opacity={0.34}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-
-          <mesh ref={beamSpillRef}>
-            <planeGeometry args={[9.2, 3.4]} />
-            <meshBasicMaterial
-              color="#155dff"
-              transparent
-              opacity={0.13}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-
-          <pointLight ref={beamLightRef} color="#7efaff" distance={10} decay={1.2} intensity={0} />
-          <pointLight ref={beamLightWideRef} color="#2759ff" distance={18} decay={1.4} intensity={0} />
+          <pointLight ref={beamLightRef} color="#00ffff" distance={15} decay={1.5} intensity={0} />
         </group>
 
         <mesh ref={scanPulseRef} visible={false}>

@@ -11,7 +11,7 @@ export default function ContactScene() {
 
         {/* Experience Summary */}
         <div>
-          <p className="text-cyan-300 font-mono text-xs tracking-widest uppercase mb-4">Experience</p>
+          <p className="text-cyan-400 font-mono text-xs tracking-widest uppercase mb-4">Experience</p>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">Background</h2>
           <p className="text-gray-300 text-lg md:text-xl leading-relaxed">
             Built backend systems, REST APIs, and automation tools across multiple domains.
@@ -22,7 +22,7 @@ export default function ContactScene() {
 
         {/* Learning Focus */}
         <div>
-          <p className="text-cyan-300 font-mono text-xs tracking-widest uppercase mb-4">Currently Learning</p>
+          <p className="text-cyan-400 font-mono text-xs tracking-widest uppercase mb-4">Currently Learning</p>
           <div className="flex flex-wrap gap-3">
             {["System Design", "LLM Integration", "DevOps", "Open Source"].map((item) => (
               <span
@@ -40,7 +40,7 @@ export default function ContactScene() {
 
         {/* Contact Links */}
         <div>
-          <p className="text-cyan-300 font-mono text-xs tracking-widest uppercase mb-6">Contact</p>
+          <p className="text-cyan-400 font-mono text-xs tracking-widest uppercase mb-6">Contact</p>
           <div className="flex flex-col sm:flex-row gap-4">
             <a
               href="https://github.com"

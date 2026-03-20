@@ -46,16 +46,24 @@ function SceneOrchestrator({
       targetZ = THREE.MathUtils.lerp(13, 10.7, scanBlend);
       targetY = THREE.MathUtils.lerp(-0.55, -1.05, scanBlend);
       targetX = THREE.MathUtils.lerp(0, 0.08, scanBlend);
-    } else if (p < 0.58) {
-      const decisionBlend = smoothStep((p - 0.47) / 0.11);
-      targetZ = THREE.MathUtils.lerp(10.7, 10.15, decisionBlend);
-      targetY = THREE.MathUtils.lerp(-1.05, -0.88, decisionBlend);
-      targetX = THREE.MathUtils.lerp(0.08, 0.12, decisionBlend);
+    } else if (p <= 0.50) {
+      // 0.47-0.50: Match Found text holds completely still while target glows.
+      targetZ = 10.7;
+      targetY = -1.05;
+      targetX = 0.08;
+    } else if (p <= 0.58) {
+      // 0.50-0.58: Physical Zoom matching the DOM exactly. Capped to prevent clipping.
+      const zoomBlend = smoothStep((p - 0.50) / 0.08); // smoothStep natively provides slow-start/slow-stop easing!
+      targetZ = THREE.MathUtils.lerp(10.7, 7.5, zoomBlend); // Z=7.5 gives approx 50% screen size
+      targetY = THREE.MathUtils.lerp(-1.05, -0.6, zoomBlend); // Perfect centering
+      targetX = THREE.MathUtils.lerp(0.08, 0.2, zoomBlend);
     } else {
-      const zoomBlend = smoothStep((p - 0.58) / 0.07);
-      targetZ = THREE.MathUtils.lerp(10.15, 5.15, zoomBlend);
-      targetY = THREE.MathUtils.lerp(-0.88, -0.24, zoomBlend);
-      targetX = THREE.MathUtils.lerp(0.12, 0.34, zoomBlend);
+      // > 0.58: Hard stop on the zoom. Readout phase while PortfolioReveal fades in. 
+      // Extremely subtle slow drift backwards for premium depth feel.
+      const drift = smoothStep((p - 0.58) / 0.42);
+      targetZ = THREE.MathUtils.lerp(7.5, 7.8, drift);
+      targetY = THREE.MathUtils.lerp(-0.6, -0.65, drift);
+      targetX = THREE.MathUtils.lerp(0.2, 0.3, drift);
     }
 
     state.camera.position.z = THREE.MathUtils.damp(state.camera.position.z, targetZ, 2.3, delta);
